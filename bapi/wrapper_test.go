@@ -1,4 +1,4 @@
-package bpi
+package bapi
 
 import "testing"
 
