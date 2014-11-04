@@ -16,20 +16,23 @@ type ApiClient struct {
     url         string
 }
 
-type TickerData struct {
+type Ticker struct {
     // Average24h is not available when fetching all tickers in bulk through
-    // Tickers()
+    // GlobalTickers()
     Average24h      json.Number     `json:"24h_avg"`
     Ask             json.Number     `json:"ask"`
     Bid             json.Number     `json:"bid"`
     Last            json.Number     `json:"last"`
     Timestamp       string          `json:"timestamp"`
+    // Volume* only available for global tickers.
     VolumeBTC       json.Number     `json:"volume_btc"`
     VolumePercent   json.Number     `json:"volume_percent"`
+    // TotalVolume is only available for market tickers.
+    TotalVolume     json.Number     `json:"total_vol"`
 }
 
-type AllTickerData struct {
-    Tickers         map[string]TickerData
+type AllTickers struct {
+    Tickers         map[string]Ticker
     Timestamp       string
 }
 
@@ -41,8 +44,16 @@ func NewWithOptions(url string) *ApiClient {
     return &ApiClient{url: url}
 }
 
-func (c *ApiClient) AvailableTickers() ([]string, error) {
-    data, err := c.apiCall("ticker/global/")
+func (c *ApiClient) GlobalTickerList() ([]string, error) {
+    return c.tickerList("ticker/global/")
+}
+
+func (c *ApiClient) MarketTickerList() ([]string, error) {
+    return c.tickerList("ticker/")
+}
+
+func (c *ApiClient) tickerList(endpoint string) ([]string, error) {
+    data, err := c.apiCall(endpoint)
     if err != nil { return nil, err }
 
     var ti map[string]string
@@ -60,19 +71,35 @@ func (c *ApiClient) AvailableTickers() ([]string, error) {
     return tl, nil
 }
 
-func (c *ApiClient) Ticker(symbol string) (*TickerData, error) {
-    data, err := c.apiCall("ticker/global/" + symbol)
-    if err != nil { return nil, err }
-
-    var td TickerData
-    err = json.Unmarshal(data, &td)
-    if err != nil { return nil, err }
-
-    return &td, nil
+func (c *ApiClient) GlobalTicker(symbol string) (*Ticker, error) {
+    return c.ticker("ticker/global/", symbol)
 }
 
-func (c *ApiClient) Tickers() (*AllTickerData, error) {
-    data, err := c.apiCall("ticker/global/all")
+func (c *ApiClient) MarketTicker(symbol string) (*Ticker, error) {
+    return c.ticker("ticker/", symbol)
+}
+
+func (c *ApiClient) ticker(endpoint string, symbol string) (*Ticker, error) {
+    data, err := c.apiCall(endpoint + symbol)
+    if err != nil { return nil, err }
+
+    var t Ticker
+    err = json.Unmarshal(data, &t)
+    if err != nil { return nil, err }
+
+    return &t, nil
+}
+
+func (c *ApiClient) GlobalTickers() (*AllTickers, error) {
+    return c.tickers("ticker/global/all")
+}
+
+func (c *ApiClient) MarketTickers() (*AllTickers, error) {
+    return c.tickers("ticker/all")
+}
+
+func (c *ApiClient) tickers(endpoint string) (*AllTickers, error) {
+    data, err := c.apiCall(endpoint)
     if err != nil { return nil, err }
 
     // The API returns a nice map of symbols to TickerData, plus a timestamp...
@@ -80,22 +107,22 @@ func (c *ApiClient) Tickers() (*AllTickerData, error) {
     err = json.Unmarshal(data, &td)
     if err != nil { return nil, err }
 
-    var atd AllTickerData
-    atd.Tickers = make(map[string]TickerData)
+    var at AllTickers
+    at.Tickers = make(map[string]Ticker)
     for k, v := range td {
         if k == "timestamp" {
-            err = json.Unmarshal(v, &atd.Timestamp)
+            err = json.Unmarshal(v, &at.Timestamp)
             if err != nil { return nil, err }
             continue
         }
 
-        var t TickerData
+        var t Ticker
         err = json.Unmarshal(v, &t)
         if err != nil { return nil, err }
-        atd.Tickers[k] = t
+        at.Tickers[k] = t
     }
 
-    return &atd, nil
+    return &at, nil
 }
 
 func (c *ApiClient) Ignored() (map[string]string, error) {

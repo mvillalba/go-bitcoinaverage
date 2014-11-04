@@ -11,9 +11,12 @@ func main() {
 
     // Fun stuff
     version()
-    availableTickers(client)
-    ticker(client)
-    tickers(client)
+    globalTickerList(client)
+    globalTicker(client)
+    globalTickers(client)
+    marketTickerList(client)
+    marketTicker(client)
+    marketTickers(client)
     ignored(client)
 }
 
@@ -22,14 +25,14 @@ func version() {
     fmt.Println("BAPI Interface Author:", bapi.Author)
 }
 
-func availableTickers(client *bapi.ApiClient) {
+func globalTickerList(client *bapi.ApiClient) {
     fmt.Println()
     fmt.Println("=======================================")
-    fmt.Println("List available tickers.")
+    fmt.Println("List available global tickers.")
     fmt.Println("=======================================")
     fmt.Println("")
 
-    tl, err := client.AvailableTickers()
+    tl, err := client.GlobalTickerList()
     if err != nil {
         fmt.Println("ERROR:", err)
         return
@@ -40,14 +43,14 @@ func availableTickers(client *bapi.ApiClient) {
     }
 }
 
-func ticker(client *bapi.ApiClient) {
+func globalTicker(client *bapi.ApiClient) {
     fmt.Println()
     fmt.Println("=======================================")
-    fmt.Println("Display GBP ticker data.")
+    fmt.Println("Display GBP global ticker data.")
     fmt.Println("=======================================")
     fmt.Println("")
 
-    t, err := client.Ticker("GBP")
+    t, err := client.GlobalTicker("GBP")
     if err != nil {
         fmt.Println("ERROR:", err)
         return
@@ -62,14 +65,14 @@ func ticker(client *bapi.ApiClient) {
     fmt.Println("VolumePercent:", t.VolumePercent)
 }
 
-func tickers(client *bapi.ApiClient) {
+func globalTickers(client *bapi.ApiClient) {
     fmt.Println()
     fmt.Println("=======================================")
-    fmt.Println("Display all tickers.")
+    fmt.Println("Display all global tickers.")
     fmt.Println("=======================================")
     fmt.Println("")
 
-    tl, err := client.Tickers()
+    tl, err := client.GlobalTickers()
     if err != nil {
         fmt.Println("ERROR:", err)
         return
@@ -86,6 +89,72 @@ func tickers(client *bapi.ApiClient) {
         fmt.Println("  Timestamp:", t.Timestamp)
         fmt.Println("  VolumeBTC:", t.VolumeBTC)
         fmt.Println("  VolumePercent:", t.VolumePercent)
+    }
+}
+
+func marketTickerList(client *bapi.ApiClient) {
+    fmt.Println()
+    fmt.Println("=======================================")
+    fmt.Println("List available market tickers.")
+    fmt.Println("=======================================")
+    fmt.Println("")
+
+    tl, err := client.MarketTickerList()
+    if err != nil {
+        fmt.Println("ERROR:", err)
+        return
+    }
+
+    for _, t := range tl {
+        fmt.Println(t)
+    }
+}
+
+func marketTicker(client *bapi.ApiClient) {
+    fmt.Println()
+    fmt.Println("=======================================")
+    fmt.Println("Display AUD market ticker data.")
+    fmt.Println("=======================================")
+    fmt.Println("")
+
+    t, err := client.MarketTicker("AUD")
+    if err != nil {
+        fmt.Println("ERROR:", err)
+        return
+    }
+
+    fmt.Println("Average24h:", t.Average24h)
+    fmt.Println("Ask:", t.Ask)
+    fmt.Println("Bid:", t.Bid)
+    fmt.Println("Last:", t.Last)
+    fmt.Println("Timestamp:", t.Timestamp)
+    fmt.Println("TotalVolume:", t.TotalVolume)
+}
+
+func marketTickers(client *bapi.ApiClient) {
+    fmt.Println()
+    fmt.Println("=======================================")
+    fmt.Println("Display all market tickers.")
+    fmt.Println("=======================================")
+    fmt.Println("")
+
+    tl, err := client.MarketTickers()
+    if err != nil {
+        fmt.Println("ERROR:", err)
+        return
+    }
+
+    fmt.Println("Timestamp:", tl.Timestamp)
+    fmt.Println("")
+
+    for s, t := range tl.Tickers {
+        fmt.Println(s + ":")
+        fmt.Println("  Average24h:", t.Average24h)
+        fmt.Println("  Ask:", t.Ask)
+        fmt.Println("  Bid:", t.Bid)
+        fmt.Println("  Last:", t.Last)
+        fmt.Println("  Timestamp:", t.Timestamp)
+        fmt.Println("  TotalVolume:", t.TotalVolume)
     }
 }
 
