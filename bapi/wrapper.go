@@ -36,6 +36,31 @@ type AllTickers struct {
     Timestamp       string
 }
 
+type Exchange struct {
+    DisplayURL      string          `json:"display_URL"`
+    DisplayName     string          `json:"display_name"`
+    Rates           ExchangeRates   `json:"rates"`
+    Source          string          `json:"source"`
+    VolumeBTC       json.Number     `json:"volume_btc"`
+    VolumePercent   json.Number     `json:"volume_percent"`
+}
+
+type ExchangeRates struct {
+    Ask             json.Number     `json:"ask"`
+    Bid             json.Number     `json:"bid"`
+    Last            json.Number     `json:"last"`
+}
+
+type ExchangeList struct {
+    Exchanges       map[string]Exchange
+    Timestamp       string
+}
+
+type AllExchanges struct {
+    Exchanges       map[string]map[string]Exchange
+    Timestamp       string
+}
+
 func New() *ApiClient {
     return NewWithOptions(ApiUrl)
 }
@@ -45,14 +70,18 @@ func NewWithOptions(url string) *ApiClient {
 }
 
 func (c *ApiClient) GlobalTickerList() ([]string, error) {
-    return c.tickerList("ticker/global/")
+    return c.index("ticker/global/")
 }
 
 func (c *ApiClient) MarketTickerList() ([]string, error) {
-    return c.tickerList("ticker/")
+    return c.index("ticker/")
 }
 
-func (c *ApiClient) tickerList(endpoint string) ([]string, error) {
+func (c *ApiClient) ExchangeList() ([]string, error) {
+    return c.index("exchanges/")
+}
+
+func (c *ApiClient) index(endpoint string) ([]string, error) {
     data, err := c.apiCall(endpoint)
     if err != nil { return nil, err }
 
@@ -102,7 +131,7 @@ func (c *ApiClient) tickers(endpoint string) (*AllTickers, error) {
     data, err := c.apiCall(endpoint)
     if err != nil { return nil, err }
 
-    // The API returns a nice map of symbols to TickerData, plus a timestamp...
+    // The API returns a nice map of symbols to Ticker, plus a timestamp...
     var td map[string]json.RawMessage
     err = json.Unmarshal(data, &td)
     if err != nil { return nil, err }
@@ -123,6 +152,60 @@ func (c *ApiClient) tickers(endpoint string) (*AllTickers, error) {
     }
 
     return &at, nil
+}
+
+func (c *ApiClient) Exchanges(symbol string) (*ExchangeList, error) {
+    data, err := c.apiCall("exchanges/" + symbol)
+    if err != nil { return nil, err }
+
+    // The API returns a nice map of names to Exchange, plus a timestamp...
+    var ed map[string]json.RawMessage
+    err = json.Unmarshal(data, &ed)
+    if err != nil { return nil, err }
+
+    var el ExchangeList
+    el.Exchanges = make(map[string]Exchange)
+    for k, v := range ed {
+        if k == "timestamp" {
+            err = json.Unmarshal(v, &el.Timestamp)
+            if err != nil { return nil, err }
+            continue
+        }
+
+        var e Exchange
+        err = json.Unmarshal(v, &e)
+        if err != nil { return nil, err }
+        el.Exchanges[k] = e
+    }
+
+    return &el, nil
+}
+
+func (c *ApiClient) AllExchanges() (*AllExchanges, error) {
+    data, err := c.apiCall("exchanges/all")
+    if err != nil { return nil, err }
+
+    // The API returns a nice map of symbols to Exchange, plus a timestamp...
+    var ed map[string]json.RawMessage
+    err = json.Unmarshal(data, &ed)
+    if err != nil { return nil, err }
+
+    var ae AllExchanges
+    ae.Exchanges = make(map[string]map[string]Exchange)
+    for k, v := range ed {
+        if k == "timestamp" {
+            err = json.Unmarshal(v, &ae.Timestamp)
+            if err != nil { return nil, err }
+            continue
+        }
+
+        var e map[string]Exchange
+        err = json.Unmarshal(v, &e)
+        if err != nil { return nil, err }
+        ae.Exchanges[k] = e
+    }
+
+    return &ae, nil
 }
 
 func (c *ApiClient) Ignored() (map[string]string, error) {

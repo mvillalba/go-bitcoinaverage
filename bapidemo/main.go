@@ -17,6 +17,9 @@ func main() {
     marketTickerList(client)
     marketTicker(client)
     marketTickers(client)
+    exchangeList(client)
+    exchanges(client)
+    allExchanges(client)
     ignored(client)
 }
 
@@ -155,6 +158,86 @@ func marketTickers(client *bapi.ApiClient) {
         fmt.Println("  Last:", t.Last)
         fmt.Println("  Timestamp:", t.Timestamp)
         fmt.Println("  TotalVolume:", t.TotalVolume)
+    }
+}
+
+func exchangeList(client *bapi.ApiClient) {
+    fmt.Println()
+    fmt.Println("=======================================")
+    fmt.Println("List symbols for which there is")
+    fmt.Println("exchange-specific data available.")
+    fmt.Println("=======================================")
+    fmt.Println("")
+
+    tl, err := client.ExchangeList()
+    if err != nil {
+        fmt.Println("ERROR:", err)
+        return
+    }
+
+    for _, t := range tl {
+        fmt.Println(t)
+    }
+}
+
+func exchanges(client *bapi.ApiClient) {
+    fmt.Println()
+    fmt.Println("=======================================")
+    fmt.Println("List all exchanges for symbols USD.")
+    fmt.Println("=======================================")
+    fmt.Println("")
+
+    el, err := client.Exchanges("USD")
+    if err != nil {
+        fmt.Println("ERROR:", err)
+        return
+    }
+
+    fmt.Println("Timestamp:", el.Timestamp)
+    fmt.Println("")
+
+    for k, v := range el.Exchanges {
+        fmt.Println(k + ":")
+        fmt.Println("  DisplayURL:", v.DisplayURL)
+        fmt.Println("  DisplayName:", v.DisplayName)
+        fmt.Println("  Rates / Ask:", v.Rates.Ask)
+        fmt.Println("  Rates / Bid:", v.Rates.Bid)
+        fmt.Println("  Rates / Last:", v.Rates.Last)
+        fmt.Println("  Source:", v.Source)
+        fmt.Println("  VolumeBTC:", v.VolumeBTC)
+        fmt.Println("  VolumePercent:", v.VolumePercent)
+    }
+}
+
+func allExchanges(client *bapi.ApiClient) {
+    fmt.Println()
+    fmt.Println("=======================================")
+    fmt.Println("List all exchanges for all symbols.")
+    fmt.Println("=======================================")
+    fmt.Println("")
+
+    el, err := client.AllExchanges()
+    if err != nil {
+        fmt.Println("ERROR:", err)
+        return
+    }
+
+    fmt.Println("Timestamp:", el.Timestamp)
+    fmt.Println("")
+
+    for k, v := range el.Exchanges {
+        fmt.Println(k + ":")
+        for kk, vv := range v {
+            fmt.Println("  " + kk + ":")
+            fmt.Println("    DisplayURL:", vv.DisplayURL)
+            fmt.Println("    DisplayName:", vv.DisplayName)
+            fmt.Println("    Rates / Ask", vv.Rates.Ask)
+            fmt.Println("    Rates / Bid:", vv.Rates.Bid)
+            fmt.Println("    Rates / Last:", vv.Rates.Last)
+            fmt.Println("    Source:", vv.Source)
+            fmt.Println("    VolumeBTC:", vv.VolumeBTC)
+            fmt.Println("    VolumePercent:", vv.VolumePercent)
+        }
     }
 }
 
