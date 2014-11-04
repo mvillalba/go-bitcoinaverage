@@ -64,6 +64,11 @@ type AllExchanges struct {
     Timestamp       string
 }
 
+type MinutelyHistoryRecord struct {
+    DateTime        string
+    Average         json.Number
+}
+
 type HourlyHistoryRecord struct {
     DateTime        string
     High            json.Number
@@ -241,6 +246,28 @@ func (c *ApiClient) AllExchanges() (*AllExchanges, error) {
     }
 
     return &ae, nil
+}
+
+func (c *ApiClient) MinutelyHistory(symbol string) ([]MinutelyHistoryRecord, error) {
+    header, records, err := c.csvCall("history/" + symbol + "/per_minute_24h_sliding_window.csv")
+    if err != nil { return nil, err }
+
+    rs := make([]MinutelyHistoryRecord, len(records))
+    for idx, record := range records {
+        var r MinutelyHistoryRecord
+
+        for i, column := range header {
+            switch column {
+            case "datetime": r.DateTime = record[i];
+            case "average": r.Average = json.Number(record[i]);
+            default: return nil, errors.New("got unexpected CSV columns.")
+            }
+        }
+
+        rs[idx] = r
+    }
+
+    return rs, nil
 }
 
 func (c *ApiClient) HourlyHistory(symbol string) ([]HourlyHistoryRecord, error) {
