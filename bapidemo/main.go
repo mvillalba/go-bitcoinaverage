@@ -20,6 +20,7 @@ func main() {
     exchangeList(client)
     exchanges(client)
     allExchanges(client)
+    historyList(client)
     ignored(client)
 }
 
@@ -238,6 +239,25 @@ func allExchanges(client *bapi.ApiClient) {
             fmt.Println("    VolumeBTC:", vv.VolumeBTC)
             fmt.Println("    VolumePercent:", vv.VolumePercent)
         }
+    }
+}
+
+func historyList(client *bapi.ApiClient) {
+    fmt.Println()
+    fmt.Println("=======================================")
+    fmt.Println("List symbols for which there is")
+    fmt.Println("historical data available.")
+    fmt.Println("=======================================")
+    fmt.Println("")
+
+    hl, err := client.HistoryList()
+    if err != nil {
+        fmt.Println("ERROR:", err)
+        return
+    }
+
+    for _, s := range hl {
+        fmt.Println(s)
     }
 }
 

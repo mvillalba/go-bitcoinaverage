@@ -70,18 +70,22 @@ func NewWithOptions(url string) *ApiClient {
 }
 
 func (c *ApiClient) GlobalTickerList() ([]string, error) {
-    return c.index("ticker/global/")
+    return c.index("ticker/global/", true)
 }
 
 func (c *ApiClient) MarketTickerList() ([]string, error) {
-    return c.index("ticker/")
+    return c.index("ticker/", true)
 }
 
 func (c *ApiClient) ExchangeList() ([]string, error) {
-    return c.index("exchanges/")
+    return c.index("exchanges/", true)
 }
 
-func (c *ApiClient) index(endpoint string) ([]string, error) {
+func (c *ApiClient) HistoryList() ([]string, error) {
+    return c.index("history/", false)
+}
+
+func (c *ApiClient) index(endpoint string, hasAll bool) ([]string, error) {
     data, err := c.apiCall(endpoint)
     if err != nil { return nil, err }
 
@@ -89,7 +93,9 @@ func (c *ApiClient) index(endpoint string) ([]string, error) {
     err = json.Unmarshal(data, &ti)
     if err != nil { return nil, err }
 
-    tl := make([]string, len(ti) - 1)
+    tllen := len(ti)
+    if hasAll { tllen -= 1 }
+    tl := make([]string, tllen)
     i := 0
     for k := range ti {
         if k == "all" { continue }
