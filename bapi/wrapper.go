@@ -16,9 +16,21 @@ type ApiClient struct {
     url         string
 }
 
-type Currency struct {
-    Currency    string      `json:"currency"`
-    Country     string      `json:"country"`
+type TickerData struct {
+    // Average24h is not available when fetching all tickers in bulk through
+    // Tickers()
+    Average24h      json.Number     `json:"24h_avg"`
+    Ask             json.Number     `json:"ask"`
+    Bid             json.Number     `json:"bid"`
+    Last            json.Number     `json:"last"`
+    Timestamp       string          `json:"timestamp"`
+    VolumeBTC       json.Number     `json:"volume_btc"`
+    VolumePercent   json.Number     `json:"volume_percent"`
+}
+
+type AllTickerData struct {
+    Tickers         map[string]TickerData
+    Timestamp       string
 }
 
 func New() *ApiClient {
@@ -46,6 +58,44 @@ func (c *ApiClient) AvailableTickers() ([]string, error) {
     }
 
     return tl, nil
+}
+
+func (c *ApiClient) Ticker(symbol string) (*TickerData, error) {
+    data, err := c.apiCall("ticker/global/" + symbol)
+    if err != nil { return nil, err }
+
+    var td TickerData
+    err = json.Unmarshal(data, &td)
+    if err != nil { return nil, err }
+
+    return &td, nil
+}
+
+func (c *ApiClient) Tickers() (*AllTickerData, error) {
+    data, err := c.apiCall("ticker/global/all")
+    if err != nil { return nil, err }
+
+    // The API returns a nice map of symbols to TickerData, plus a timestamp...
+    var td map[string]json.RawMessage
+    err = json.Unmarshal(data, &td)
+    if err != nil { return nil, err }
+
+    var atd AllTickerData
+    atd.Tickers = make(map[string]TickerData)
+    for k, v := range td {
+        if k == "timestamp" {
+            err = json.Unmarshal(v, &atd.Timestamp)
+            if err != nil { return nil, err }
+            continue
+        }
+
+        var t TickerData
+        err = json.Unmarshal(v, &t)
+        if err != nil { return nil, err }
+        atd.Tickers[k] = t
+    }
+
+    return &atd, nil
 }
 
 func (c *ApiClient) Ignored() (map[string]string, error) {
