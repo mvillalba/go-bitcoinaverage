@@ -21,6 +21,7 @@ func main() {
     exchanges(client)
     allExchanges(client)
     historyList(client)
+    hourlyHistory(client)
     dailyHistory(client)
     volumeHistory(client)
     ignored(client)
@@ -260,6 +261,28 @@ func historyList(client *bapi.ApiClient) {
 
     for _, s := range hl {
         fmt.Println(s)
+    }
+}
+
+func hourlyHistory(client *bapi.ApiClient) {
+    fmt.Println()
+    fmt.Println("=======================================")
+    fmt.Println("List hourly sliding window history data")
+    fmt.Println("for the last 30 days for symbol HKD.")
+    fmt.Println("=======================================")
+
+    vh, err := client.HourlyHistory("HKD")
+    if err != nil {
+        fmt.Println("ERROR:", err)
+        return
+    }
+
+    for _, r := range vh {
+        fmt.Println("")
+        fmt.Println("DateTime:", r.DateTime)
+        fmt.Println("High:", r.High)
+        fmt.Println("Low:", r.Low)
+        fmt.Println("Average:", r.Average)
     }
 }
 
