@@ -64,6 +64,14 @@ type AllExchanges struct {
     Timestamp       string
 }
 
+type DailyHistoryRecord struct {
+    DateTime        string
+    High            json.Number
+    Low             json.Number
+    Average         json.Number
+    Volume          json.Number
+}
+
 type VolumeHistoryRecord struct {
     DateTime        string
     TotalVolume     json.Number
@@ -228,26 +236,38 @@ func (c *ApiClient) AllExchanges() (*AllExchanges, error) {
     return &ae, nil
 }
 
+func (c *ApiClient) DailyHistory(symbol string) ([]DailyHistoryRecord, error) {
+    header, records, err := c.csvCall("history/" + symbol + "/per_day_all_time_history.csv")
+    if err != nil { return nil, err }
+
+    rs := make([]DailyHistoryRecord, len(records))
+    for idx, record := range records {
+        var r DailyHistoryRecord
+
+        for i, column := range header {
+            switch column {
+            case "datetime": r.DateTime = record[i];
+            case "high": r.High = json.Number(record[i]);
+            case "low": r.Low = json.Number(record[i]);
+            case "average": r.Average = json.Number(record[i]);
+            case "volume": r.Volume = json.Number(record[i]);
+            default: return nil, errors.New("got unexpected CSV columns.")
+            }
+        }
+
+        rs[idx] = r
+    }
+
+    return rs, nil
+}
+
 func (c *ApiClient) VolumeHistory(symbol string) ([]VolumeHistoryRecord, error) {
     // Fetch CSV
-    data, err := c.apiCall("history/" + symbol + "/volumes.csv")
+    header, records, err := c.csvCall("history/" + symbol + "/volumes.csv")
     if err != nil { return nil, err }
 
-    // Initialize CSV reader
-    stream := bytes.NewReader(data)
-    reader := csv.NewReader(stream)
-
-    // Process CSV header
-    var header []string
-    header, err = reader.Read()
-    if err != nil { return nil, err }
-
-    // Process CSV records
-    var records [][]string
+    // Process as best we can
     var rs []VolumeHistoryRecord
-    records, err = reader.ReadAll()
-    if err != nil { return nil, err }
-
     for _, record := range records {
         var r VolumeHistoryRecord
         r.Exchanges = make(map[string]ExchangeVolumeHistoryRecord)
@@ -283,6 +303,28 @@ func (c *ApiClient) VolumeHistory(symbol string) ([]VolumeHistoryRecord, error) 
     }
 
     return rs, nil
+}
+
+func (c *ApiClient) csvCall(endpoint string) ([]string, [][]string, error) {
+    // Fetch CSV
+    data, err := c.apiCall(endpoint)
+    if err != nil { return nil, nil, err }
+
+    // Initialize CSV reader
+    stream := bytes.NewReader(data)
+    reader := csv.NewReader(stream)
+
+    // Get CSV header
+    var header []string
+    header, err = reader.Read()
+    if err != nil { return nil, nil, err }
+
+    // Get CSV records
+    var records [][]string
+    records, err = reader.ReadAll()
+    if err != nil { return nil, nil, err }
+
+    return header, records, nil
 }
 
 func (c *ApiClient) Ignored() (map[string]string, error) {
