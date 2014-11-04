@@ -21,6 +21,7 @@ func main() {
     exchanges(client)
     allExchanges(client)
     historyList(client)
+    volumeHistory(client)
     ignored(client)
 }
 
@@ -258,6 +259,31 @@ func historyList(client *bapi.ApiClient) {
 
     for _, s := range hl {
         fmt.Println(s)
+    }
+}
+
+func volumeHistory(client *bapi.ApiClient) {
+    fmt.Println()
+    fmt.Println("=======================================")
+    fmt.Println("List volume history data for symbol")
+    fmt.Println("NZD.")
+    fmt.Println("=======================================")
+
+    vh, err := client.VolumeHistory("NZD")
+    if err != nil {
+        fmt.Println("ERROR:", err)
+        return
+    }
+
+    for _, r := range vh {
+        fmt.Println("")
+        fmt.Println("DateTime:", r.DateTime)
+        fmt.Println("TotalVolume:", r.TotalVolume)
+        for k, v := range r.Exchanges {
+            fmt.Println(k + ":")
+            fmt.Println("  VolumeBTC:", v.VolumeBTC)
+            fmt.Println("  VolumePercent:", v.VolumePercent)
+        }
     }
 }
 

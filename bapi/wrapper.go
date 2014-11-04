@@ -2,9 +2,12 @@ package bapi
 
 import (
     "encoding/json"
+    "encoding/csv"
     "io/ioutil"
     "net/http"
+    "strings"
     "errors"
+    "bytes"
     "fmt"
 )
 
@@ -59,6 +62,17 @@ type ExchangeList struct {
 type AllExchanges struct {
     Exchanges       map[string]map[string]Exchange
     Timestamp       string
+}
+
+type VolumeHistoryRecord struct {
+    DateTime        string
+    TotalVolume     json.Number
+    Exchanges       map[string]ExchangeVolumeHistoryRecord
+}
+
+type ExchangeVolumeHistoryRecord struct {
+    VolumeBTC       json.Number
+    VolumePercent   json.Number
 }
 
 func New() *ApiClient {
@@ -212,6 +226,63 @@ func (c *ApiClient) AllExchanges() (*AllExchanges, error) {
     }
 
     return &ae, nil
+}
+
+func (c *ApiClient) VolumeHistory(symbol string) ([]VolumeHistoryRecord, error) {
+    // Fetch CSV
+    data, err := c.apiCall("history/" + symbol + "/volumes.csv")
+    if err != nil { return nil, err }
+
+    // Initialize CSV reader
+    stream := bytes.NewReader(data)
+    reader := csv.NewReader(stream)
+
+    // Process CSV header
+    var header []string
+    header, err = reader.Read()
+    if err != nil { return nil, err }
+
+    // Process CSV records
+    var records [][]string
+    var rs []VolumeHistoryRecord
+    records, err = reader.ReadAll()
+    if err != nil { return nil, err }
+
+    for _, record := range records {
+        var r VolumeHistoryRecord
+        r.Exchanges = make(map[string]ExchangeVolumeHistoryRecord)
+
+        for i, column := range header {
+            switch column {
+            case "datetime": r.DateTime = record[i];
+            case "total_vol": r.TotalVolume = json.Number(record[i]);
+            default:
+                m := strings.Split(column, " ")
+                if len(m) != 2 { return nil, errors.New("got malformed CSV data.") }
+                val := r.Exchanges[m[0]]
+                if m[1] == "BTC" {
+                    val.VolumeBTC = json.Number(record[i])
+                } else {
+                    val.VolumePercent = json.Number(record[i])
+                }
+                r.Exchanges[m[0]] = val
+            }
+        }
+
+        // Filter bogus data (argggggggg......)
+        for k, v := range r.Exchanges {
+            if (v.VolumeBTC == "" || v.VolumePercent == "") ||
+               (v.VolumeBTC == "0" && v.VolumePercent == "0") {
+                   delete(r.Exchanges, k)
+            }
+        }
+
+        if len(r.Exchanges) >= 1 {
+            rs = append(rs, r)
+        }
+    }
+
+    return rs, nil
 }
 
 func (c *ApiClient) Ignored() (map[string]string, error) {
