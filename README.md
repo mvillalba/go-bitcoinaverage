@@ -1,5 +1,5 @@
-CoinDesk
-========
+BitcoinAverage
+==============
 
 Thin Go wrapper for [BitcoinAverage](http://www.coindesk.com/)'s Price Index API.
 
