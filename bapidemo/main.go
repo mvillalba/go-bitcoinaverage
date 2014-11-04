@@ -12,12 +12,7 @@ func main() {
     // Fun stuff
     version()
     ignored(client)
-    /*supportedCurrencies(client)
-    currentPrice(client)
-    currentPriceForCurrency(client)
-    historical(client)
-    historicalForYesterday(client)
-    historicalForDates(client)*/
+    availableTickers(client)
 }
 
 func version() {
@@ -40,5 +35,23 @@ func ignored(client *bapi.ApiClient) {
 
     for k := range im {
         fmt.Println(k + ":", im[k])
+    }
+}
+
+func availableTickers(client *bapi.ApiClient) {
+    fmt.Println()
+    fmt.Println("=======================================")
+    fmt.Println("List available tickers.")
+    fmt.Println("=======================================")
+    fmt.Println("")
+
+    tl, err := client.AvailableTickers()
+    if err != nil {
+        fmt.Println("ERROR:", err)
+        return
+    }
+
+    for _, t := range tl {
+        fmt.Println(t)
     }
 }

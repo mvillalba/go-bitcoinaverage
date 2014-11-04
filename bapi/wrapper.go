@@ -29,6 +29,25 @@ func NewWithOptions(url string) *ApiClient {
     return &ApiClient{url: url}
 }
 
+func (c *ApiClient) AvailableTickers() ([]string, error) {
+    data, err := c.apiCall("ticker/global/")
+    if err != nil { return nil, err }
+
+    var ti map[string]string
+    err = json.Unmarshal(data, &ti)
+    if err != nil { return nil, err }
+
+    tl := make([]string, len(ti) - 1)
+    i := 0
+    for k := range ti {
+        if k == "all" { continue }
+        tl[i] = k
+        i++
+    }
+
+    return tl, nil
+}
+
 func (c *ApiClient) Ignored() (map[string]string, error) {
     data, err := c.apiCall("ignored")
     if err != nil { return nil, err }
