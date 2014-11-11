@@ -17,6 +17,7 @@ var (
 
 type ApiClient struct {
     url         string
+    client      *http.Client
 }
 
 type Ticker struct {
@@ -100,7 +101,7 @@ func New() *ApiClient {
 }
 
 func NewWithOptions(url string) *ApiClient {
-    return &ApiClient{url: url}
+    return &ApiClient{url: url, client: &http.Client{}}
 }
 
 func (c *ApiClient) GlobalTickerList() ([]string, error) {
@@ -400,8 +401,12 @@ func (c *ApiClient) apiCall(endpoint string) ([]byte, error) {
     // Build URL
     url := fmt.Sprintf("%v/%v", c.url, endpoint)
 
+    // Build request
+    req, err := http.NewRequest("GET", url, nil)
+    if err != nil { return nil, err }
+
     // Make request
-    resp, err := http.Get(url)
+    resp, err := c.client.Do(req)
     if err != nil { return nil, err }
 
     // Retrieve raw JSON response
