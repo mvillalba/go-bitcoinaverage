@@ -11,7 +11,7 @@ import (
     "fmt"
 )
 
-var (
+const (
     ApiUrl = "https://api.bitcoinaverage.com/"
 )
 
